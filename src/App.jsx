@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
-import Favories from './pages/Favorites'
+import Favorites from './pages/Favorites'
 import CoinDetails from './pages/CoinDetails'
 import Navbar from './components/Navbar'
 import './styles/global.css'
@@ -19,7 +19,7 @@ function App() {
             <Route path='/' element={<Home/>}/>
             <Route path='/favorites' element={<Favorites/>}/>
             {/* O :id é um parâmetro dinâmico para sabermos qual moeda abrir */}
-            <Route path='/coin/:id' element={<Datails/>}/>
+            <Route path='/coin/:id' element={<CoinDetails/>}/>
           </Routes>
       </BrowserRouter>
     </>
