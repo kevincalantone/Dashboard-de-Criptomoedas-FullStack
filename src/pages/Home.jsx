@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import CoinCard from "../components/CoinCard"
 import useFetch from "../hooks/useFetch"
 
@@ -8,7 +8,17 @@ function Home(){
        '/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false'
     )
 
-    const [favorites, setFavorites] = useState([])
+    const [favorites, setFavorites] = useState(() =>{
+        const saved = localStorage.getItem('@cripto-favs')
+        return saved ? JSON.parse(saved) : []
+    })
+
+    useEffect(() =>{
+        localStorage.setItem('@cripto-favs', JSON.stringify(favorites))
+    }, [favorites])
+
+
+
 
     function handleFav(id){
         if (favorites.includes(id)){
