@@ -6,7 +6,7 @@ const Loader = () => {
   return (
     <div className='loader-container'>
       <div className="spinner"></div>
-      <p>\buscando dados do mercado...</p>
+      <p>Buscando dados do mercado...</p>
     </div>
   )
 }

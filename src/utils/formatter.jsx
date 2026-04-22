@@ -1,11 +1,13 @@
-//Funções para transformar números em dinheiro
 
-import React from 'react'
 
-const formatter = () => {
-  return (
-    <div>formatter</div>
-  )
-}
+export const currencyFormatter = (value) => {
+  if (typeof value !== 'number') return '$ 0.00'; 
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(value);
+};
 
-export default formatter
+export const percentFormatter = (value) => {
+  return `${value.toFixed(2)}%`;
+};
