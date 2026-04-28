@@ -210,3 +210,37 @@ body {
 }
 
 
+.navbar {
+  display: flex;
+  justify-content: space-between; /* Empurra a logo para a esquerda e links para a direita */
+  align-items: center;
+  padding: 15px 50px;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #333;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 30px; /* Isso cria o espaço entre 'Início' e 'Meus Favoritos' */
+}
+
+.navbar a {
+  text-decoration: none; /* Remove o sublinhado */
+  color: #646cff; /* Cor roxa/azulada */
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.navbar a.active {
+  color: #ffffff; /* Link da página atual fica branco */
+}
+
+/* Ajuste para mobile se a tela for pequena */
+@media (max-width: 600px) {
+  .navbar {
+    padding: 15px 20px;
+  }
+  .navbar-links {
+    gap: 15px;
+  }
+}
