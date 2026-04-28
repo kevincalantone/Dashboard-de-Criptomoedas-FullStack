@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import CoinCard from "../components/CoinCard"
 import useFetch from "../hooks/useFetch"
 import SearchBar from "../components/SearchBar"
-import Loader  from "../components/Loader"
+import Loader from "../components/Loader"
 
 function Home(){
     const {data, loading, error} = useFetch(
