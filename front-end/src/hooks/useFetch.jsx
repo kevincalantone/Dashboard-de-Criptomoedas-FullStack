@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../services/api'; 
 
 const useFetch = (url) => {
   const [data, setData] = useState(null);
@@ -11,23 +12,12 @@ const useFetch = (url) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`https://api.coingecko.com/api/v3${url}`, {
-          method: 'GET',
-          headers: {
-            'accept': 'application/json',
-            // Sua chave configurada aqui:
-            'x-cg-demo-api-key': 'CG-EFgo5EnGP2HtuUcisobSNnht'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Erro ao buscar dados da API');
-        }
-
-        const result = await response.json();
-        setData(result);
+    
+        const response = await api.get(url);
+        setData(response.data);
+        setError(null);
       } catch (err) {
-        setError(err.message);
+        setError(err.message || 'Erro ao buscar dados');
       } finally {
         setLoading(false);
       }
