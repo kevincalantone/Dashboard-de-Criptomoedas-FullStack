@@ -3,12 +3,40 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const mongoose = require('mongoose'); // 1. Importamos o Mongoose
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
+
+// ==========================================
+// CONFIGURAÇÃO DO BANCO DE DADOS (MONGODB)
+// ==========================================
+
+// Ouvintes de eventos para monitorar a conexão em tempo real
+mongoose.connection.on('connected', () => {
+  console.log('✅ Conectado ao MongoDB com sucesso!');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ Erro na conexão do Mongoose:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('🔌 Mongoose desconectado.');
+});
+
+// Conecta de fato usando a URL do arquivo .env
+mongoose.connect(process.env.MONGODB_URI)
+  .catch((err) => {
+    console.error('❌ Erro inicial de configuração no Mongoose.connect:', err.message);
+  });
+
+// ==========================================
+// ROTAS DA API
+// ==========================================
 
 // Rota para buscar as criptomoedas
 app.get('/api/coins', async (req, res) => {
@@ -22,7 +50,6 @@ app.get('/api/coins', async (req, res) => {
         sparkline: false
       },
       headers: {
-        // A chave agora vem do .env do back-end com o novo nome
         'x-cg-demo-api-key': process.env.COINGECKO_API_KEY 
       }
     });
