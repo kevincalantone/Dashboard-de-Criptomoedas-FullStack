@@ -1,4 +1,3 @@
-# 🪙 Central Cripto (ou o nome em português que você escolheu)
 
 Uma aplicação Full-Stack moderna para monitoramento e rastreamento de criptomoedas em tempo real. O sistema consome dados do mercado financeiro digital e permite aos usuários gerenciar de forma persistente uma lista de moedas favoritas.
 
