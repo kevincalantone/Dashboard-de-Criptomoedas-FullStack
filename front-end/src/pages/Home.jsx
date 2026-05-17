@@ -68,7 +68,7 @@ function Home(){
 
     return(
         <main className="container">
-            <h1 className="title">Radar Cripto</h1>
+            <h1 className="title">Rastreador Cripto</h1>
             
             <div className="filter-container">
                 <SearchBar value={search} onChange={setSearch}/>
