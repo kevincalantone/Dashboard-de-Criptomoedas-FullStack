@@ -2,11 +2,13 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
-const cors = require('cors');
-const mongoose = require('mongoose'); // 1. Importamos o Mongoose
+const cors = require('cors'); // Declarado apenas uma vez, perfeito!
+const mongoose = require('mongoose'); 
 
 const app = express();
-app.use(cors());
+
+// Configurações do Express (Middlewares)
+app.use(cors()); // Liberado para o front-end se conectar sem erros de CORS!
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
@@ -38,7 +40,15 @@ mongoose.connect(process.env.MONGODB_URI)
 // ROTAS DA API
 // ==========================================
 
-// Rota para buscar as criptomoedas
+// Rota de teste inicial para o Front-end
+app.get('/api/status', (req, res) => {
+  res.json({ 
+    status: "online", 
+    message: "O back-end está conversando com o front-end com sucesso!" 
+  });
+});
+
+// Rota oficial para buscar as criptomoedas da CoinGecko
 app.get('/api/coins', async (req, res) => {
   try {
     const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
