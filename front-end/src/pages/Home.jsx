@@ -3,7 +3,6 @@ import api from "../services/api"
 import CoinCard from "../components/CoinCard"
 import SearchBar from "../components/SearchBar"
 import Loader from "../components/Loader"
-import { toast } from 'react-toastify'
 
 function Home(){
     const [data, setData] = useState([])
