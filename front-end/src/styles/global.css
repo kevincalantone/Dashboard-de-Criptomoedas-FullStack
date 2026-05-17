@@ -221,12 +221,12 @@ body {
 
 .navbar-links {
   display: flex;
-  gap: 30px; /* Isso cria o espaço entre 'Início' e 'Meus Favoritos' */
+  gap: 30px;
 }
 
 .navbar a {
-  text-decoration: none; /* Remove o sublinhado */
-  color: #646cff; /* Cor roxa/azulada */
+  text-decoration: none; 
+  color: #646cff; 
   font-weight: 600;
   font-size: 1.1rem;
 }
@@ -246,3 +246,74 @@ body {
 }
 
 
+/* ==========================================================================
+   PAINEL DE CONTROLES (PESQUISA + FILTRO)
+   ========================================================================== */
+
+.filter-container {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: center;
+  margin: 40px auto;
+  padding: 15px 20px;
+  background-color: #161616;
+  border: 1px solid #262626;
+  border-radius: 16px;
+  max-width: 800px; /* Mantém o conjunto centralizado e elegante */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.filter-container .search-container {
+  margin: 0;
+  flex: 1;
+}
+
+.filter-container .search-container input {
+  max-width: 100%; /* Ocupa o espaço disponível do lado esquerdo */
+}
+
+.filter-container select {
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background-color: #1a1a1a;
+  color: #e2e8f0;
+  border: 1px solid #333;
+  border-radius: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 220px;
+}
+
+.filter-container select:hover {
+  border-color: #4f46e5; /* Um tom de roxo levemente mais fechado antes do foco */
+  background-color: #222;
+}
+
+
+.filter-container select:focus {
+  border-color: #646cff;
+  box-shadow: 0 0 15px rgba(100, 108, 255, 0.25);
+  background-color: #1a1a1a;
+}
+
+.filter-container select option {
+  background-color: #1a1a1a;
+  color: #fff;
+  padding: 12px;
+}
+
+@media (max-width: 650px) {
+  .filter-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 15px;
+  }
+  
+  .filter-container select {
+    width: 100%;
+  }
+}
