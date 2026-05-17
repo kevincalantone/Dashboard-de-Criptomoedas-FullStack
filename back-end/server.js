@@ -37,6 +37,23 @@ mongoose.connect(process.env.MONGODB_URI)
   });
 
 // ==========================================
+// MODELO DE DADOS (SCHEMA) - NOVO!
+// ==========================================
+const FavoriteSchema = new mongoose.Schema({
+  coinId: {
+    type: String,
+    required: true,
+    unique: true // Evita duplicados no banco
+  },
+  favoritedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const Favorite = mongoose.model('Favorite', FavoriteSchema);
+
+// ==========================================
 // ROTAS DA API
 // ==========================================
 
@@ -70,9 +87,7 @@ app.get('/api/coins', async (req, res) => {
   }
 });
 
-// ==========================================
-//  Buscar detalhes de UMA moeda por ID
-// ==========================================
+// Buscar detalhes de UMA moeda por ID
 app.get('/api/coins/:id', async (req, res) => {
   try {
     const { id } = req.params; // Captura o ID vindo da URL (ex: 'bitcoin', 'ethereum')
@@ -95,6 +110,50 @@ app.get('/api/coins/:id', async (req, res) => {
   } catch (error) {
     console.error(`Erro ao buscar detalhes da moeda [${req.params.id}]:`, error.message);
     res.status(500).json({ error: 'Erro ao buscar detalhes da moeda específica' });
+  }
+});
+
+// ==========================================
+// ROTAS DE FAVORITOS (SALVAR NO MONGODB) - NOVO!
+// ==========================================
+
+// 1. GET - Listar todos os favoritos salvos no banco
+app.get('/api/favorites', async (req, res) => {
+  try {
+    const favorites = await Favorite.find().sort({ favoritedAt: -1 });
+    res.json(favorites);
+  } catch (error) {
+    console.error('Erro ao buscar favoritos:', error.message);
+    res.status(500).json({ error: 'Erro ao buscar favoritos' });
+  }
+});
+
+// 2. POST - Adicionar um novo favorito ao banco
+app.post('/api/favorites', async (req, res) => {
+  try {
+    const { coinId } = req.body;
+    if (!coinId) return res.status(400).json({ error: 'O coinId é obrigatório' });
+
+    const newFavorite = new Favorite({ coinId });
+    await newFavorite.save();
+    res.status(201).json({ message: 'Moeda favoritada com sucesso!', favorite: newFavorite });
+  } catch (error) {
+    if (error.code === 11000) return res.status(400).json({ error: 'Esta moeda já está nos favoritos' });
+    console.error('Erro ao salvar favorito:', error.message);
+    res.status(500).json({ error: 'Erro ao salvar favorito' });
+  }
+});
+
+// 3. DELETE - Remover um favorito do banco usando o coinId direto
+app.delete('/api/favorites/:coinId', async (req, res) => {
+  try {
+    const { coinId } = req.params;
+    const deleted = await Favorite.findOneAndDelete({ coinId });
+    if (!deleted) return res.status(404).json({ error: 'Moeda não encontrada nos favoritos' });
+    res.json({ message: 'Moeda removida dos favoritos com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao remover favorito:', error.message);
+    res.status(500).json({ error: 'Erro ao remover favorito' });
   }
 });
 

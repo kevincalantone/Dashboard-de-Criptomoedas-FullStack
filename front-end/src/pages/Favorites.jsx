@@ -4,33 +4,30 @@ import CoinCard from '../components/CoinCard'
 import Loader from '../components/Loader'
 
 function Favorites() {
-  const [data, setData] = useState([])
+  const [coins, setCoins] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
-  const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem('@cripto-favs')
-    return saved ? JSON.parse(saved) : []
-  })
-
-  // Busca os dados da API usando Axios
+  // Busca os favoritos do banco e cruza com a rota geral de moedas
   useEffect(() => {
     async function loadFavoriteData() {
       try {
         setLoading(true)
-        const response = await api.get('/coins/markets', {
-          params: {
-            vs_currency: 'usd',
-            order: 'market_cap_desc',
-            per_page: 100,
-            page: 1,
-            sparkline: false
-          }
-        })
-        setData(response.data)
+
+        // 1. Busca os IDs favoritados no seu MongoDB Atlas (/api/favorites)
+        const favsResponse = await api.get('/favorites')
+        const favIds = favsResponse.data.map(fav => fav.coinId)
+
+        // 2. Busca a lista geral de moedas na sua rota correta do back-end (/api/coins)
+        const coinsResponse = await api.get('/coins')
+
+        // 3. Filtra mantendo apenas as moedas que estão salvas no banco
+        const favoritedCoins = coinsResponse.data.filter(coin => favIds.includes(coin.id))
+        
+        setCoins(favoritedCoins)
         setError(false)
       } catch (err) {
-        console.error(err)
+        console.error("Erro ao carregar favoritos:", err)
         setError(true)
       } finally {
         setLoading(false)
@@ -40,16 +37,18 @@ function Favorites() {
     loadFavoriteData()
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem('@cripto-favs', JSON.stringify(favorites))
-  }, [favorites])
-
-  const handleFav = (id) => {
-    setFavorites(favorites.filter(fav => fav !== id))
+  // Função para remover o favorito direto pelo clique na estrela
+  const handleFav = async (id) => {
+    try {
+      // 1. Avisa o back-end para deletar do MongoDB
+      await api.delete(`/favorites/${id}`)
+      
+      // 2. Remove da tela imediatamente atualizando o estado do React
+      setCoins(coins.filter(coin => coin.id !== id))
+    } catch (err) {
+      console.error("Erro ao remover favorito do banco:", err)
+    }
   }
-
-  // Filtra as moedas que estão na lista de favoritos do localStorage
-  const favoriteCoins = data?.filter(coin => favorites.includes(coin.id))
 
   if (loading) return <Loader />
   if (error) return <h1 className="error">Erro ao carregar favoritos</h1>
@@ -58,13 +57,13 @@ function Favorites() {
     <main className="container">
       <h1 className="title">Meus Favoritos</h1>
 
-      {favoriteCoins?.length > 0 ? (
+      {coins.length > 0 ? (
         <div className="coin-grid">
-          {favoriteCoins.map(coin => (
+          {coins.map(coin => (
             <CoinCard
               key={coin.id}
               coin={coin}
-              isFav={true}
+              isFav={true} // Se está nesta página, com certeza está favoritada
               onFav={() => handleFav(coin.id)}
             />
           ))}
