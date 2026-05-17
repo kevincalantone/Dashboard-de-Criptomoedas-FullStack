@@ -48,7 +48,7 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Rota oficial para buscar as criptomoedas da CoinGecko
+// Rota oficial para buscar as criptomoedas da CoinGecko (Geral - 100 moedas)
 app.get('/api/coins', async (req, res) => {
   try {
     const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
@@ -65,8 +65,36 @@ app.get('/api/coins', async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    console.error('Erro na requisição:', error.message);
+    console.error('Erro na requisição geral de moedas:', error.message);
     res.status(500).json({ error: 'Erro ao buscar dados da API' });
+  }
+});
+
+// ==========================================
+//  Buscar detalhes de UMA moeda por ID
+// ==========================================
+app.get('/api/coins/:id', async (req, res) => {
+  try {
+    const { id } = req.params; // Captura o ID vindo da URL (ex: 'bitcoin', 'ethereum')
+    
+    const response = await axios.get(`https://api.coingecko.com/api/v3/coins/${id}`, {
+      params: {
+        localization: false,
+        tickers: false,
+        market_data: true,
+        community_data: false,
+        developer_data: false,
+        sparkline: false
+      },
+      headers: {
+        'x-cg-demo-api-key': process.env.COINGECKO_API_KEY 
+      }
+    });
+    
+    res.json(response.data);
+  } catch (error) {
+    console.error(`Erro ao buscar detalhes da moeda [${req.params.id}]:`, error.message);
+    res.status(500).json({ error: 'Erro ao buscar detalhes da moeda específica' });
   }
 });
 
