@@ -37,7 +37,7 @@ function Favorites() {
     loadFavoriteData()
   }, [])
 
-  // Função para remover o favorito direto pelo clique na estrela
+
   const handleFav = async (id) => {
     try {
       // 1. Avisa o back-end para deletar do MongoDB
@@ -63,7 +63,7 @@ function Favorites() {
             <CoinCard
               key={coin.id}
               coin={coin}
-              isFav={true} // Se está nesta página, com certeza está favoritada
+              isFav={true} 
               onFav={() => handleFav(coin.id)}
             />
           ))}

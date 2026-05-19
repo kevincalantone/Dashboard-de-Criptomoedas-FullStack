@@ -114,7 +114,7 @@ app.get('/api/coins/:id', async (req, res) => {
 });
 
 // ==========================================
-// ROTAS DE FAVORITOS (SALVAR NO MONGODB) - NOVO!
+// ROTAS DE FAVORITOS (SALVAR NO MONGODB) 
 // ==========================================
 
 // 1. GET - Listar todos os favoritos salvos no banco
