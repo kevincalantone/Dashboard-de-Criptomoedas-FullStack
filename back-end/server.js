@@ -2,13 +2,12 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
-const cors = require('cors'); // Declarado apenas uma vez, perfeito!
-const mongoose = require('mongoose'); 
+const cors = require('cors');
+const mongoose = require('mongoose');
 
 const app = express();
 
-// Configurações do Express (Middlewares)
-app.use(cors()); // Liberado para o front-end se conectar sem erros de CORS!
+app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
@@ -16,8 +15,6 @@ const PORT = process.env.PORT || 3001;
 // ==========================================
 // CONFIGURAÇÃO DO BANCO DE DADOS (MONGODB)
 // ==========================================
-
-// Ouvintes de eventos para monitorar a conexão em tempo real
 mongoose.connection.on('connected', () => {
   console.log('✅ Conectado ao MongoDB com sucesso!');
 });
@@ -30,25 +27,17 @@ mongoose.connection.on('disconnected', () => {
   console.log('🔌 Mongoose desconectado.');
 });
 
-// Conecta de fato usando a URL do arquivo .env
 mongoose.connect(process.env.MONGODB_URI)
   .catch((err) => {
     console.error('❌ Erro inicial de configuração no Mongoose.connect:', err.message);
   });
 
 // ==========================================
-// MODELO DE DADOS (SCHEMA) - NOVO!
+// MODELO DE DADOS (SCHEMA)
 // ==========================================
 const FavoriteSchema = new mongoose.Schema({
-  coinId: {
-    type: String,
-    required: true,
-    unique: true // Evita duplicados no banco
-  },
-  favoritedAt: {
-    type: Date,
-    default: Date.now
-  }
+  coinId: { type: String, required: true, unique: true },
+  favoritedAt: { type: Date, default: Date.now }
 });
 
 const Favorite = mongoose.model('Favorite', FavoriteSchema);
@@ -56,68 +45,120 @@ const Favorite = mongoose.model('Favorite', FavoriteSchema);
 // ==========================================
 // ROTAS DA API
 // ==========================================
-
-// Rota de teste inicial para o Front-end
 app.get('/api/status', (req, res) => {
-  res.json({ 
-    status: "online", 
-    message: "O back-end está conversando com o front-end com sucesso!" 
+  res.json({
+    status: "online",
+    message: "O back-end está conversando com o front-end com sucesso!"
   });
 });
 
-// Rota oficial para buscar as criptomoedas da CoinGecko (Geral - 100 moedas)
+// ==========================================
+// CLIENTE COINGECKO (chave + cache)
+// ==========================================
+// COINGECKO_API_KEY  -> sua chave (Demo começa com "CG-")
+// COINGECKO_PLAN     -> "demo" (padrão) ou "pro"
+const CG_KEY = (process.env.COINGECKO_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+const CG_PLAN = (process.env.COINGECKO_PLAN || 'demo').toLowerCase();
+const CG_BASE = CG_PLAN === 'pro'
+  ? 'https://pro-api.coingecko.com/api/v3'
+  : 'https://api.coingecko.com/api/v3';
+
+if (!CG_KEY) {
+  console.warn('⚠️  COINGECKO_API_KEY não definida — usando a API pública sem chave (limite bem menor).');
+}
+
+const coingecko = axios.create({
+  baseURL: CG_BASE,
+  timeout: 10000,
+  headers: CG_KEY
+    ? { [CG_PLAN === 'pro' ? 'x-cg-pro-api-key' : 'x-cg-demo-api-key']: CG_KEY }
+    : {}
+});
+
+// Cache em memória: evita estourar o limite de requisições do plano Demo
+const cache = new Map();
+async function cgGet(path, params = {}, ttlMs = 60_000) {
+  const key = path + JSON.stringify(params);
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.time < ttlMs) return hit.data;
+
+  const { data } = await coingecko.get(path, { params });
+  cache.set(key, { data, time: Date.now() });
+  return data;
+}
+
+// Repassa ao front o erro real da CoinGecko (em vez de um 500 genérico)
+function handleCgError(res, error, contexto) {
+  const status = error.response?.status;
+  const detalhe = error.response?.data?.status?.error_message
+    || error.response?.data?.error
+    || error.message;
+  console.error(`Erro CoinGecko [${contexto}] (${status ?? 'sem resposta'}):`, detalhe);
+
+  if (status === 401 || status === 403) {
+    return res.status(502).json({ error: 'Chave da CoinGecko inválida, revogada ou do plano errado.', detalhe });
+  }
+  if (status === 429) {
+    return res.status(429).json({ error: 'Limite de requisições da CoinGecko atingido. Tente em instantes.' });
+  }
+  if (status === 404) {
+    return res.status(404).json({ error: 'Moeda não encontrada.' });
+  }
+  return res.status(502).json({ error: 'Erro ao buscar dados da CoinGecko', detalhe });
+}
+
+// Diagnóstico rápido da chave: GET /api/status/coingecko
+app.get('/api/status/coingecko', async (req, res) => {
+  try {
+    const data = await coingecko.get('/ping').then(r => r.data);
+    res.json({ ok: true, plano: CG_PLAN, chaveConfigurada: Boolean(CG_KEY), resposta: data });
+  } catch (error) {
+    res.status(502).json({
+      ok: false,
+      plano: CG_PLAN,
+      chaveConfigurada: Boolean(CG_KEY),
+      status: error.response?.status,
+      detalhe: error.response?.data?.status?.error_message || error.message
+    });
+  }
+});
+
+// Lista geral (100 moedas)
 app.get('/api/coins', async (req, res) => {
   try {
-    const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-      params: {
-        vs_currency: 'usd',
-        order: 'market_cap_desc',
-        per_page: 100,
-        page: 1,
-        sparkline: false
-      },
-      headers: {
-        'x-cg-demo-api-key': process.env.COINGECKO_API_KEY 
-      }
+    const data = await cgGet('/coins/markets', {
+      vs_currency: 'usd',
+      order: 'market_cap_desc',
+      per_page: 100,
+      page: 1,
+      sparkline: false
     });
-    res.json(response.data);
+    res.json(data);
   } catch (error) {
-    console.error('Erro na requisição geral de moedas:', error.message);
-    res.status(500).json({ error: 'Erro ao buscar dados da API' });
+    handleCgError(res, error, 'lista de moedas');
   }
 });
 
-// Buscar detalhes de UMA moeda por ID
+// Detalhes de UMA moeda por ID
 app.get('/api/coins/:id', async (req, res) => {
   try {
-    const { id } = req.params; // Captura o ID vindo da URL (ex: 'bitcoin', 'ethereum')
-    
-    const response = await axios.get(`https://api.coingecko.com/api/v3/coins/${id}`, {
-      params: {
-        localization: false,
-        tickers: false,
-        market_data: true,
-        community_data: false,
-        developer_data: false,
-        sparkline: false
-      },
-      headers: {
-        'x-cg-demo-api-key': process.env.COINGECKO_API_KEY 
-      }
-    });
-    
-    res.json(response.data);
+    const data = await cgGet(`/coins/${encodeURIComponent(req.params.id)}`, {
+      localization: false,
+      tickers: false,
+      market_data: true,
+      community_data: false,
+      developer_data: false,
+      sparkline: false
+    }, 120_000);
+    res.json(data);
   } catch (error) {
-    console.error(`Erro ao buscar detalhes da moeda [${req.params.id}]:`, error.message);
-    res.status(500).json({ error: 'Erro ao buscar detalhes da moeda específica' });
+    handleCgError(res, error, `detalhes ${req.params.id}`);
   }
 });
 
 // ==========================================
-// ROTAS DE FAVORITOS (SALVAR NO MONGODB) 
+// ROTAS DE FAVORITOS (SALVAR NO MONGODB)
 // ==========================================
-
-// 1. GET - Listar todos os favoritos salvos no banco
 app.get('/api/favorites', async (req, res) => {
   try {
     const favorites = await Favorite.find().sort({ favoritedAt: -1 });
@@ -128,7 +169,6 @@ app.get('/api/favorites', async (req, res) => {
   }
 });
 
-// 2. POST - Adicionar um novo favorito ao banco
 app.post('/api/favorites', async (req, res) => {
   try {
     const { coinId } = req.body;
@@ -144,7 +184,6 @@ app.post('/api/favorites', async (req, res) => {
   }
 });
 
-// 3. DELETE - Remover um favorito do banco usando o coinId direto
 app.delete('/api/favorites/:coinId', async (req, res) => {
   try {
     const { coinId } = req.params;
